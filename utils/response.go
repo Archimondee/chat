@@ -1,4 +1,4 @@
-package config
+package utils
 
 type response struct {
 	Status  string `json:"status"`
