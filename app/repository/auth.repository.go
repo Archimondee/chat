@@ -7,7 +7,6 @@ import (
 	"chat/config"
 	"chat/utils"
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"strings"
@@ -48,20 +47,20 @@ func (a AuthRepositoryImpl) SignupUser(user *request.UserCreateRequest) (*entity
 	return newUser, nil
 }
 
-func (a AuthRepositoryImpl) SigninUser(user *request.UserSigninRequest) (*string, error) {
-	fmt.Println("user", user.Email)
+func (a AuthRepositoryImpl) SigninUser(user *request.UserSigninRequest) (*entity.User, *string, error) {
+
 	userSignIn, err := a.userRepository.FindUserByEmail(user.Email)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	errPassword := utils.VerifyPassword(userSignIn.Password, user.Password)
 	if errPassword != nil {
-		return nil, errPassword
+		return nil, nil, errPassword
 	}
 
 	config, _ := config.LoadConfig(".")
 	access_token, err := utils.CreateToken(userSignIn, config.AccessTokenPrivateKey)
 
-	return &access_token, nil
+	return userSignIn, &access_token, nil
 }

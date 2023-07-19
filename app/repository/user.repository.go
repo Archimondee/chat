@@ -30,7 +30,7 @@ func (u UserRepositoryImpl) FindUserByEmail(email string) (*entity.User, error) 
 	return user, nil
 }
 
-func (u UserRepositoryImpl) FindUserById(uuid string) (*entity.User, error) {
+func (u UserRepositoryImpl) FindUserByUuid(uuid string) (*entity.User, error) {
 	var user *entity.User
 	result := u.DB.First(&user, "uuid = ?", uuid)
 
@@ -39,4 +39,26 @@ func (u UserRepositoryImpl) FindUserById(uuid string) (*entity.User, error) {
 	}
 
 	return user, nil
+}
+
+func (u UserRepositoryImpl) FindUserById(id uint) (*entity.User, error) {
+	var user *entity.User
+	result := u.DB.First(&user, "id = ?", id)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return user, nil
+}
+
+func (u UserRepositoryImpl) FindUserAll() ([]*entity.User, error) {
+	var user []*entity.User
+	result := u.DB.Find(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return user, nil
+
 }

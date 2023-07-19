@@ -2,6 +2,7 @@ package main
 
 import (
 	"chat/app/http/controllers"
+	"chat/app/middlewares"
 	"chat/app/repository"
 	"chat/config"
 	"chat/utils"
@@ -24,6 +25,7 @@ func main() {
 	ctx := context.TODO()
 	db := utils.DB
 	UserRepository := repository.NewUserRepositoryImpl(ctx, db)
+	UserController := controllers.NewUserController(UserRepository, ctx)
 
 	AuthRepository := repository.NewAuthRepository(ctx, db, UserRepository)
 	AuthController := controllers.NewAuthController(AuthRepository, ctx)
@@ -44,6 +46,11 @@ func main() {
 		{
 			auth.POST("/signin", AuthController.SigninUser)
 			auth.POST("/signup", AuthController.SignupUser)
+		}
+
+		user := apiv1.Group("/users").Use(middlewares.AuthMiddleware(UserRepository))
+		{
+			user.GET("/", UserController.GetAllUser)
 		}
 	}
 

@@ -26,7 +26,7 @@ func (ac *AuthController) SigninUser(ctx *gin.Context) {
 		return
 	}
 
-	token, err := ac.authRepository.SigninUser(&user)
+	userSignin, token, err := ac.authRepository.SigninUser(&user)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.ResponseData("error", "wrong email or password", nil))
@@ -34,6 +34,9 @@ func (ac *AuthController) SigninUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, utils.ResponseData("success", "login success", gin.H{
+		"uuid":  userSignin.Uuid,
+		"email": userSignin.Email,
+		"name":  userSignin.Name,
 		"token": token,
 	}))
 }

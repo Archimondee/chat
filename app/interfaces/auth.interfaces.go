@@ -7,5 +7,5 @@ import (
 
 type AuthRepository interface {
 	SignupUser(input *request.UserCreateRequest) (*entity.User, error)
-	SigninUser(input *request.UserSigninRequest) (*string, error)
+	SigninUser(input *request.UserSigninRequest) (*entity.User, *string, error)
 }
