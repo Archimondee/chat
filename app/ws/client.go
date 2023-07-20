@@ -151,6 +151,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	}
 
 	message.Sender = *client.user
+	fmt.Println("dataa", client)
 
 	//switch message.Action {
 	//case SendMessageAction:

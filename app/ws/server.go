@@ -41,8 +41,8 @@ func (server *Server) Run() {
 			server.registerClient(client)
 		case client := <-server.unregister:
 			server.unregisterClient(client)
-			//case message := <-server.broadcast:
-			//	server.broadcastToClients(message)
+		case message := <-server.broadcast:
+			server.broadcastToClients(message)
 		}
 	}
 }
@@ -101,13 +101,9 @@ func (server *Server) listOnlineClients(client *Client) {
 		fmt.Println("Error finduserall", err)
 	}
 
-	//for _, user := range server.users {
-	//	fmt.Println("data", user)
 	message := &ListOnlineMessage{
 		Action: UserOnline,
 		Users:  res,
 	}
-	//client.send <- message.encode()
 	server.broadcastToClients(message.encode())
-	//}
 }
