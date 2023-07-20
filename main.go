@@ -4,6 +4,7 @@ import (
 	"chat/app/http/controllers"
 	"chat/app/middlewares"
 	"chat/app/repository"
+	"chat/app/ws"
 	"chat/config"
 	"chat/utils"
 	"context"
@@ -53,6 +54,13 @@ func main() {
 			user.GET("/", UserController.GetAllUser)
 		}
 	}
+
+	server := ws.NewWebsocketServer(UserRepository)
+	go server.Run()
+
+	r.GET("/message", func(c *gin.Context) {
+		ws.ServeWebsocket(server, c.Writer, c.Request, UserRepository)
+	})
 
 	err = r.Run(":3000")
 	if err != nil {

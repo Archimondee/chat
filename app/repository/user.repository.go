@@ -4,6 +4,7 @@ import (
 	"chat/app/interfaces"
 	"chat/app/models/entity"
 	"context"
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -61,4 +62,14 @@ func (u UserRepositoryImpl) FindUserAll() ([]*entity.User, error) {
 
 	return user, nil
 
+}
+
+func (u UserRepositoryImpl) UpdateStatus(status string, uuid string) {
+	user, err := u.FindUserByUuid(uuid)
+	if err != nil {
+		fmt.Println("Error", err)
+	}
+
+	user.Status = status
+	u.DB.Save(&user)
 }
