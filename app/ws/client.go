@@ -2,9 +2,8 @@ package ws
 
 import (
 	"chat/app/interfaces"
-	"chat/app/models/entity"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -39,7 +38,8 @@ type Client struct {
 	conn   *websocket.Conn
 	server *Server
 	send   chan []byte
-	user   *entity.User
+	uuid   string
+	//user   *entity.User
 }
 
 func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, userRepository interfaces.UserRepository) {
@@ -55,12 +55,12 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, user
 		return
 	}
 
-	res, err := userRepository.FindUserByUuid(uuid[0])
-	if err != nil {
-		fmt.Println("Error", err)
-	}
+	//res, err := userRepository.FindUserByUuid(uuid[0])
+	//if err != nil {
+	//	fmt.Println("Error", err)
+	//}
 
-	client := newClient(conn, server, res)
+	client := newClient(conn, server, uuid[0])
 
 	go client.writePump()
 	go client.readPump()
@@ -68,11 +68,11 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, user
 	server.register <- client
 }
 
-func newClient(conn *websocket.Conn, server *Server, user *entity.User) *Client {
+func newClient(conn *websocket.Conn, server *Server, uuid string) *Client {
 	return &Client{
 		server: server,
 		conn:   conn,
-		user:   user,
+		uuid:   uuid,
 		send:   make(chan []byte, 256),
 	}
 }
@@ -150,8 +150,12 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 		return
 	}
 
-	message.Sender = *client.user
-	fmt.Println("dataa", client)
+	message.Sender = client.uuid
+	//fmt.Println("dataa", client)
+	switch message.Action {
+	case SendMessage:
+		client.sendMessage(&message.Sender, message.Recipient, []byte(message.Message))
+	}
 
 	//switch message.Action {
 	//case SendMessageAction:
@@ -176,4 +180,13 @@ func (client *Client) disconnect() {
 	client.server.unregister <- client
 	close(client.send)
 	client.conn.Close()
+}
+
+func (client *Client) sendMessage(sender *string, uuid string, message []byte) {
+	recipientClient, ok := client.server.clients[uuid]
+	if ok {
+		client.server.clients[recipientClient.uuid].send <- message
+	} else {
+		//Add to rabbit MQ
+	}
 }

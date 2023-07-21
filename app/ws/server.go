@@ -2,23 +2,23 @@ package ws
 
 import (
 	"chat/app/interfaces"
-	"chat/app/models/entity"
+	//"chat/app/models/entity"
 	"fmt"
 )
 
 type Server struct {
-	clients    map[*Client]bool
+	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan []byte
 
 	userRepository interfaces.UserRepository
-	users          []*entity.User
+	users          []*string
 }
 
 func NewWebsocketServer(userRepository interfaces.UserRepository) *Server {
 	s := &Server{
-		clients:        make(map[*Client]bool),
+		clients:        make(map[string]*Client),
 		register:       make(chan *Client),
 		unregister:     make(chan *Client),
 		broadcast:      make(chan []byte),
@@ -42,24 +42,24 @@ func (server *Server) Run() {
 		case client := <-server.unregister:
 			server.unregisterClient(client)
 		case message := <-server.broadcast:
-			server.broadcastToClients(message)
+			server.broadcastToAllClientsConnected(message)
 		}
 	}
 }
 
 func (server *Server) registerClient(client *Client) {
-	server.userRepository.UpdateStatus("online", client.user.Uuid.String())
+	server.userRepository.UpdateStatus("online", client.uuid)
 	server.listOnlineClients(client)
-	server.clients[client] = true
-	server.users = append(server.users, client.user)
+	server.clients[client.uuid] = client
+	server.users = append(server.users, &client.uuid)
 }
 
 func (server *Server) unregisterClient(client *Client) {
-	if _, ok := server.clients[client]; ok {
-		delete(server.clients, client)
+	if _, ok := server.clients[client.uuid]; ok {
+		delete(server.clients, client.uuid)
 		for i, user := range server.users {
-			if user.Uuid == client.user.Uuid {
-				server.userRepository.UpdateStatus("offline", client.user.Uuid.String())
+			if user == &client.uuid {
+				server.userRepository.UpdateStatus("offline", client.uuid)
 				server.listOnlineClients(client)
 
 				server.users[i] = server.users[len(server.users)-1]
@@ -71,29 +71,37 @@ func (server *Server) unregisterClient(client *Client) {
 	}
 }
 
-func (server *Server) notifyClientJoined(client *Client) {
-	message := &Message{
-		Action: UserJoinedAction,
-		Sender: *client.user,
+//func (server *Server) notifyClientJoined(client *Client) {
+//	message := &Message{
+//		Action: UserJoinedAction,
+//		Sender: *client.user,
+//	}
+//
+//	server.broadcastToAllClientsConnected(message.encode())
+//}
+
+func (server *Server) broadcastToAllClientsConnected(message []byte) {
+	user, err := server.userRepository.FindUserAll()
+	if err != nil {
+		fmt.Println("Error")
 	}
 
-	server.broadcastToClients(message.encode())
-}
-
-func (server *Server) broadcastToClients(message []byte) {
-	for client := range server.clients {
-		client.send <- message
+	for _, i := range user {
+		recipient, ok := server.clients[i.Uuid.String()]
+		if ok {
+			server.clients[recipient.uuid].send <- message
+		}
 	}
 }
 
-func (server *Server) notifyClientLeft(client *Client) {
-	message := &Message{
-		Action: UserLeftAction,
-		Sender: *client.user,
-	}
-
-	server.broadcastToClients(message.encode())
-}
+//func (server *Server) notifyClientLeft(client *Client) {
+//	message := &Message{
+//		Action: UserLeftAction,
+//		Sender: *client.user,
+//	}
+//
+//	server.broadcastToAllClientsConnected(message.encode())
+//}
 
 func (server *Server) listOnlineClients(client *Client) {
 	res, err := server.userRepository.FindUserAll()
@@ -105,5 +113,5 @@ func (server *Server) listOnlineClients(client *Client) {
 		Action: UserOnline,
 		Users:  res,
 	}
-	server.broadcastToClients(message.encode())
+	server.broadcastToAllClientsConnected(message.encode())
 }

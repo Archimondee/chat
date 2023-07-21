@@ -9,12 +9,14 @@ import (
 const UserJoinedAction = "user-action"
 const UserLeftAction = "user-left"
 const UserOnline = "user-online"
+const SendMessage = "send-message"
 
 type Message struct {
-	Action  string `json:"action"`
-	Message string `json:"message"`
+	Action    string `json:"action"`
+	Message   string `json:"message"`
+	Recipient string `json:"recipient"`
 	//Target  *Room       `json:"target"`
-	Sender entity.User `json:"sender"`
+	Sender string `json:"sender"`
 }
 
 type ListOnlineMessage struct {
