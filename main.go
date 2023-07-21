@@ -2,6 +2,7 @@ package main
 
 import (
 	"chat/app/http/controllers"
+	_ "chat/app/interfaces"
 	"chat/app/middlewares"
 	"chat/app/repository"
 	"chat/app/ws"
@@ -31,6 +32,8 @@ func main() {
 	AuthRepository := repository.NewAuthRepository(ctx, db, UserRepository)
 	AuthController := controllers.NewAuthController(AuthRepository, ctx)
 
+	MessageRepository := repository.NewMessageRepositoryImpl(ctx, db)
+
 	r := gin.Default()
 	// Enable CORS for requests from localhost
 	corsConfig := cors.DefaultConfig()
@@ -59,7 +62,7 @@ func main() {
 	go server.Run()
 
 	r.GET("/message", func(c *gin.Context) {
-		ws.ServeWebsocket(server, c.Writer, c.Request, UserRepository)
+		ws.ServeWebsocket(server, c.Writer, c.Request, MessageRepository)
 	})
 
 	err = r.Run(":3000")

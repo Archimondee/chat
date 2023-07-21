@@ -2,7 +2,6 @@ package ws
 
 import (
 	"chat/app/interfaces"
-	//"chat/app/models/entity"
 	"fmt"
 )
 

@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"chat/app/interfaces"
 	"chat/app/models/entity"
 	"encoding/json"
 	"log"
@@ -11,20 +12,12 @@ const UserLeftAction = "user-left"
 const UserOnline = "user-online"
 const SendMessage = "send-message"
 
-type Message struct {
-	Action    string `json:"action"`
-	Message   string `json:"message"`
-	Recipient string `json:"recipient"`
-	//Target  *Room       `json:"target"`
-	Sender string `json:"sender"`
-}
-
 type ListOnlineMessage struct {
 	Action string         `json:"action"`
 	Users  []*entity.User `json:"users"`
 }
 
-func (message *Message) encode() []byte {
+func Encode(message *interfaces.Message) []byte {
 	json, err := json.Marshal(message)
 	if err != nil {
 		log.Println(err)

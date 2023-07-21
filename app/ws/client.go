@@ -3,7 +3,8 @@ package ws
 import (
 	"chat/app/interfaces"
 	"encoding/json"
-	//"fmt"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -35,16 +36,18 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	conn   *websocket.Conn
-	server *Server
-	send   chan []byte
-	uuid   string
+	conn              *websocket.Conn
+	server            *Server
+	send              chan []byte
+	uuid              string
+	messageRepository interfaces.MessageRepository
 	//user   *entity.User
+
 }
 
-func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, userRepository interfaces.UserRepository) {
-	uuid, ok := r.URL.Query()["chat"]
-	if !ok || len(uuid[0]) < 1 {
+func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, messageRepository interfaces.MessageRepository) {
+	id, ok := r.URL.Query()["chat"]
+	if !ok || len(id[0]) < 1 {
 		log.Println("Url Param 'chat' is missing")
 		return
 	}
@@ -60,7 +63,7 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, user
 	//	fmt.Println("Error", err)
 	//}
 
-	client := newClient(conn, server, uuid[0])
+	client := newClient(conn, server, id[0], messageRepository)
 
 	go client.writePump()
 	go client.readPump()
@@ -68,12 +71,13 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, user
 	server.register <- client
 }
 
-func newClient(conn *websocket.Conn, server *Server, uuid string) *Client {
+func newClient(conn *websocket.Conn, server *Server, uuid string, messageRepository interfaces.MessageRepository) *Client {
 	return &Client{
-		server: server,
-		conn:   conn,
-		uuid:   uuid,
-		send:   make(chan []byte, 256),
+		server:            server,
+		conn:              conn,
+		uuid:              uuid,
+		send:              make(chan []byte, 256),
+		messageRepository: messageRepository,
 	}
 }
 
@@ -144,13 +148,13 @@ func (client *Client) writePump() {
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
 
-	var message Message
+	var message interfaces.Message
 	if err := json.Unmarshal(jsonMessage, &message); err != nil {
 		log.Printf("Error on unmarshal JSON message %s", err)
 		return
 	}
 
-	message.Sender = client.uuid
+	//message.Sender = client.uuid
 	//fmt.Println("dataa", client)
 	switch message.Action {
 	case SendMessage:
@@ -182,11 +186,30 @@ func (client *Client) disconnect() {
 	client.conn.Close()
 }
 
-func (client *Client) sendMessage(sender *string, uuid string, message []byte) {
-	recipientClient, ok := client.server.clients[uuid]
+func (client *Client) sendMessage(sender *string, id string, message []byte) {
+	recipientClient, ok := client.server.clients[id]
 	if ok {
-		client.server.clients[recipientClient.uuid].send <- message
+		m := &interfaces.Message{
+			Action:    SendMessage,
+			Sender:    *sender,
+			Recipient: id,
+			Message:   string(message),
+			Uuid:      uuid.New(),
+			Status:    "sent",
+		}
+		client.server.clients[recipientClient.uuid].send <- Encode(m)
+		client.messageRepository.CreateMessage(*m)
 	} else {
 		//Add to rabbit MQ
+		m := &interfaces.Message{
+			Action:    SendMessage,
+			Sender:    *sender,
+			Recipient: id,
+			Message:   string(message),
+			Uuid:      uuid.New(),
+			Status:    "not_sent",
+		}
+		client.messageRepository.CreateMessage(*m)
+		fmt.Println("Add to rabbit MQ")
 	}
 }
