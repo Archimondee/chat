@@ -10,7 +10,7 @@ type Message struct {
 	Uuid      uuid.UUID `json:"uuid"`
 	RoomId    uuid.UUID `json:"room_id"`
 	Sender    uuid.UUID `json:"sender"`
-	Recipient uuid.UUID `json:"participant"`
+	Recipient uuid.UUID `json:"recipient"`
 	Text      string    `json:"text"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"-"`

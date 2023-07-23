@@ -255,12 +255,19 @@ func BroadcastClient(msg amqp.Delivery, client *Client) {
 	}
 	recipientClient, ok := client.server.clients[body.Recipient]
 	if ok {
+		body.Status = "sent"
+		errUpdate := client.messageRepository.UpdateMessage(*body)
+		if errUpdate != nil {
+			log.Println(errUpdate)
+		}
+
 		client.server.clients[recipientClient.uuid].send <- Encode(body)
 
 		err := msg.Ack(false)
 		if err != nil {
 			log.Println(err)
 		}
+
 	} else {
 		err := msg.Nack(false, true)
 		if err != nil {

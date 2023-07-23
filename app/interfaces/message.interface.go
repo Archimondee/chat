@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"chat/app/models/entity"
 	"github.com/google/uuid"
 )
 
@@ -16,4 +17,6 @@ type Message struct {
 
 type MessageRepository interface {
 	CreateMessage(message Message) error
+	UpdateMessage(message Message) error
+	ReadMessage(sender string, recipient string) ([]*entity.Message, error)
 }

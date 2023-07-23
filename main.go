@@ -34,11 +34,13 @@ func main() {
 	AuthController := controllers.NewAuthController(AuthRepository, ctx)
 
 	MessageRepository := repository.NewMessageRepositoryImpl(ctx, db)
+	MessageController := controllers.NewMessageController(ctx, MessageRepository)
 
 	r := gin.Default()
 	// Enable CORS for requests from localhost
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowMethods = []string{"*"}
 	r.Use(cors.New(corsConfig))
 
 	r.GET("/", func(ctx *gin.Context) {
@@ -56,6 +58,11 @@ func main() {
 		user := apiv1.Group("/users").Use(middlewares.AuthMiddleware(UserRepository))
 		{
 			user.GET("/", UserController.GetAllUser)
+		}
+
+		message := apiv1.Group("/chat")
+		{
+			message.GET("/", MessageController.ReadMessage)
 		}
 	}
 

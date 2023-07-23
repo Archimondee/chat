@@ -31,10 +31,40 @@ func (m MessageRepositoryImpl) CreateMessage(message interfaces.Message) error {
 		Text:      message.Message,
 		Status:    message.Status,
 	}
-	result := m.DB.Create(data)
+	result := m.DB.Table("messages").Create(data)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	return nil
+}
+
+func (m MessageRepositoryImpl) UpdateMessage(message interfaces.Message) error {
+	sender, _ := uuid.Parse(message.Sender)
+	recipient, _ := uuid.Parse(message.Recipient)
+
+	data := &entity.Message{
+		Uuid:      message.Uuid,
+		Sender:    sender,
+		Recipient: recipient,
+		Text:      message.Message,
+		Status:    message.Status,
+	}
+	result := m.DB.Table("messages").Where("uuid = ?", data.Uuid).Updates(data)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (m MessageRepositoryImpl) ReadMessage(sender string, recipient string) ([]*entity.Message, error) {
+	var data []*entity.Message
+
+	result := m.DB.Table("messages").Find(&data, "sender = ? and recipient = ? or sender = ? and recipient = ?", sender, recipient, recipient, sender)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return data, nil
 }
