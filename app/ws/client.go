@@ -2,10 +2,13 @@ package ws
 
 import (
 	"chat/app/interfaces"
+	"chat/config"
+	"chat/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/streadway/amqp"
 	"log"
 	"net/http"
 	"time"
@@ -67,6 +70,7 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, mess
 
 	go client.writePump()
 	go client.readPump()
+	go client.consumeMessage()
 
 	server.register <- client
 }
@@ -147,7 +151,6 @@ func (client *Client) writePump() {
 }
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
-
 	var message interfaces.Message
 	if err := json.Unmarshal(jsonMessage, &message); err != nil {
 		log.Printf("Error on unmarshal JSON message %s", err)
@@ -187,29 +190,81 @@ func (client *Client) disconnect() {
 }
 
 func (client *Client) sendMessage(sender *string, id string, message []byte) {
-	recipientClient, ok := client.server.clients[id]
+	//recipientClient, ok := client.server.clients[id]
+	loadedConfig, _ := config.LoadConfig(".")
+
+	m := &interfaces.Message{
+		Action:    SendMessage,
+		Sender:    *sender,
+		Recipient: id,
+		Message:   string(message),
+		Uuid:      uuid.New(),
+		Status:    "not_sent",
+	}
+	client.messageRepository.CreateMessage(*m)
+	jsonByte, err := json.Marshal(m)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = utils.AmqpChannel.Publish(
+		loadedConfig.AmqpExchange, //exchange
+		loadedConfig.AmqpRouting,  // routing key (queue name)
+		false,                     // mandatory
+		false,                     // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        jsonByte,
+		},
+	)
+	if err != nil {
+		fmt.Println("Failed to publish messages : ", err)
+	}
+}
+
+func (client *Client) consumeMessage() {
+	loadedConfig, err := config.LoadConfig("../..")
+	if err != nil {
+		log.Println(err)
+	}
+	msgs, err := utils.AmqpChannel.Consume(
+		loadedConfig.AmqpQueue, // queue
+		"",                     // consumer
+		false,                  // auto-ack
+		false,                  // exclusive
+		false,                  // no-local
+		false,                  // no-wait
+		nil,
+	)
+
+	if err != nil {
+		log.Fatal("Failed to register a consumer:", err)
+	}
+	go func() {
+		for msg := range msgs {
+			BroadcastClient(msg, client)
+		}
+	}()
+
+}
+
+func BroadcastClient(msg amqp.Delivery, client *Client) {
+	var body *interfaces.Message
+	if err := json.Unmarshal(msg.Body, &body); err != nil {
+		log.Println(err)
+	}
+	recipientClient, ok := client.server.clients[body.Recipient]
 	if ok {
-		m := &interfaces.Message{
-			Action:    SendMessage,
-			Sender:    *sender,
-			Recipient: id,
-			Message:   string(message),
-			Uuid:      uuid.New(),
-			Status:    "sent",
+		client.server.clients[recipientClient.uuid].send <- Encode(body)
+
+		err := msg.Ack(false)
+		if err != nil {
+			log.Println(err)
 		}
-		client.server.clients[recipientClient.uuid].send <- Encode(m)
-		client.messageRepository.CreateMessage(*m)
 	} else {
-		//Add to rabbit MQ
-		m := &interfaces.Message{
-			Action:    SendMessage,
-			Sender:    *sender,
-			Recipient: id,
-			Message:   string(message),
-			Uuid:      uuid.New(),
-			Status:    "not_sent",
+		err := msg.Nack(false, true)
+		if err != nil {
+			log.Println(err)
 		}
-		client.messageRepository.CreateMessage(*m)
-		fmt.Println("Add to rabbit MQ")
 	}
 }

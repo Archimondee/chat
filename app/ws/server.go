@@ -66,7 +66,6 @@ func (server *Server) unregisterClient(client *Client) {
 				break
 			}
 		}
-
 	}
 }
 

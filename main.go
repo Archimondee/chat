@@ -23,6 +23,7 @@ func main() {
 	}
 
 	utils.ConnectDatabase(loadedConfig.DBDriver, loadedConfig.DBSource, "")
+	utils.ConnectAmqp(loadedConfig.AmqpURL, loadedConfig.AmqpQueue, loadedConfig.AmqpRouting, loadedConfig.AmqpExchange)
 
 	ctx := context.TODO()
 	db := utils.DB
