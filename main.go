@@ -36,6 +36,9 @@ func main() {
 	MessageRepository := repository.NewMessageRepositoryImpl(ctx, db)
 	MessageController := controllers.NewMessageController(ctx, MessageRepository)
 
+	RoomRepository := repository.NewRoomRepositoryImpl(ctx, db)
+	RoomController := controllers.NewRoomController(RoomRepository, ctx)
+
 	r := gin.Default()
 	// Enable CORS for requests from localhost
 	corsConfig := cors.DefaultConfig()
@@ -63,6 +66,14 @@ func main() {
 		message := apiv1.Group("/chat")
 		{
 			message.GET("/", MessageController.ReadMessage)
+		}
+
+		room := apiv1.Group("/rooms").Use(middlewares.AuthMiddleware(UserRepository))
+		{
+			room.GET("/", RoomController.GetAllRoom)
+			room.POST("/create", RoomController.CreateRoom)
+			room.POST("/join", RoomController.JoinRoom)
+			room.GET("/check", RoomController.CheckRoom)
 		}
 	}
 

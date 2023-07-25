@@ -10,7 +10,7 @@ type Room struct {
 	Uuid      uuid.UUID `json:"uuid"`
 	Name      string    `json:"name"`
 	Type      string    `json:"type"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
+	DeletedAt time.Time `json:"-"`
 }
