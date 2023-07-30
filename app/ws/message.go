@@ -11,6 +11,7 @@ const UserJoinedAction = "user-action"
 const UserLeftAction = "user-left"
 const UserOnline = "user-online"
 const SendMessage = "send-message"
+const SendGroupMessage = "send-group-message"
 
 type ListOnlineMessage struct {
 	Action string         `json:"action"`

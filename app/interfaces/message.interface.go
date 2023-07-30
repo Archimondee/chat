@@ -10,6 +10,7 @@ type Message struct {
 	Action    string    `json:"action"`
 	Message   string    `json:"message"`
 	Recipient string    `json:"recipient"`
+	RoomId    string    `json:"room_id"`
 	//Target  *Room       `json:"target"`
 	Sender string `json:"sender"`
 	Status string `json:"status"`

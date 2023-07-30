@@ -40,9 +40,9 @@ func (r RoomRepositoryImpl) CreateRoom(room *request.RoomCreateRequest) (*entity
 	return newRoom, nil
 }
 
-func (r RoomRepositoryImpl) GetAllRoom() ([]*entity.Room, error) {
-	var rooms []*entity.Room
-	result := r.DB.Find(&rooms)
+func (r RoomRepositoryImpl) GetAllRoom() ([]*entity.RoomUser, error) {
+	var rooms []*entity.RoomUser
+	result := r.DB.Preload("Participants").Find(&rooms)
 	if result.Error != nil {
 		return nil, result.Error
 	}

@@ -11,24 +11,23 @@ type Server struct {
 	unregister chan *Client
 	broadcast  chan []byte
 
+	rooms map[string]*Room
+
 	userRepository interfaces.UserRepository
 	users          []*string
+	roomRepository interfaces.RoomRepository
 }
 
-func NewWebsocketServer(userRepository interfaces.UserRepository) *Server {
+func NewWebsocketServer(userRepository interfaces.UserRepository, roomRepository interfaces.RoomRepository) *Server {
 	s := &Server{
 		clients:        make(map[string]*Client),
 		register:       make(chan *Client),
 		unregister:     make(chan *Client),
 		broadcast:      make(chan []byte),
 		userRepository: userRepository,
+		rooms:          make(map[string]*Room),
+		roomRepository: roomRepository,
 	}
-	//res, err := userRepository.FindUserAll()
-	//if err != nil {
-	//	fmt.Println("Error finduserall", err)
-	//}
-
-	//s.users = res
 
 	return s
 }
@@ -112,4 +111,20 @@ func (server *Server) listOnlineClients(client *Client) {
 		Users:  res,
 	}
 	server.broadcastToAllClientsConnected(message.encode())
+}
+
+func (server *Server) RunRoomRepository(client *Client) {
+
+	rooms, err := server.roomRepository.GetAllRoom()
+	if err != nil {
+		fmt.Println("Error ", err)
+	}
+
+	for _, room := range rooms {
+		r := NewRoom(room.Uuid.String())
+		go r.RunRoom()
+		server.rooms[room.Uuid.String()] = r
+		server.rooms[room.Uuid.String()].register <- client
+
+	}
 }

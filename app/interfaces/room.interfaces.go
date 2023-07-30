@@ -7,7 +7,7 @@ import (
 
 type RoomRepository interface {
 	CreateRoom(room *request.RoomCreateRequest) (*entity.Room, error)
-	GetAllRoom() ([]*entity.Room, error)
+	GetAllRoom() ([]*entity.RoomUser, error)
 	JoinRoom(participant *request.ParticipantCreateRequest) (*entity.Participant, error)
 	CheckParticipant(UserId string, RoomId string) (bool, error)
 }

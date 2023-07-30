@@ -71,6 +71,7 @@ func ServeWebsocket(server *Server, w http.ResponseWriter, r *http.Request, mess
 	go client.writePump()
 	go client.readPump()
 	go client.consumeMessage()
+	go server.RunRoomRepository(client)
 
 	server.register <- client
 }
@@ -158,10 +159,15 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	}
 
 	//message.Sender = client.uuid
-	//fmt.Println("dataa", client)
+
 	switch message.Action {
 	case SendMessage:
 		client.sendMessage(&message.Sender, message.Recipient, []byte(message.Message))
+	case SendGroupMessage:
+		roomClient, ok := client.server.rooms[message.RoomId]
+		if ok {
+			roomClient.broadcast <- &message
+		}
 	}
 
 	//switch message.Action {

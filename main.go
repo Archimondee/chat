@@ -39,6 +39,8 @@ func main() {
 	RoomRepository := repository.NewRoomRepositoryImpl(ctx, db)
 	RoomController := controllers.NewRoomController(RoomRepository, ctx)
 
+	repository.NewParticipantRepositoryImpl(ctx, db)
+
 	r := gin.Default()
 	// Enable CORS for requests from localhost
 	corsConfig := cors.DefaultConfig()
@@ -73,11 +75,11 @@ func main() {
 			room.GET("/", RoomController.GetAllRoom)
 			room.POST("/create", RoomController.CreateRoom)
 			room.POST("/join", RoomController.JoinRoom)
-			room.GET("/check", RoomController.CheckRoom)
+			room.POST("/check", RoomController.CheckRoom)
 		}
 	}
 
-	server := ws.NewWebsocketServer(UserRepository)
+	server := ws.NewWebsocketServer(UserRepository, RoomRepository)
 	go server.Run()
 
 	r.GET("/message", func(c *gin.Context) {
