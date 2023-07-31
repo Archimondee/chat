@@ -17,10 +17,11 @@ type Config struct {
 	RefreshTokenPrivateKey string `mapstructure:"REFRESH_TOKEN_PRIVATE_KEY"`
 	RefreshTokenPublicKey  string `mapstructure:"REFRESH_TOKEN_PUBLIC_KEY"`
 
-	AmqpURL      string `mapstructure:"AMQP_URL"`
-	AmqpQueue    string `mapstructure:"AMQP_QUEUE"`
-	AmqpExchange string `mapstructure:"AMQP_EXCHANGE"`
-	AmqpRouting  string `mapstructure:"AMQP_ROUTING"`
+	AmqpURL        string `mapstructure:"AMQP_URL"`
+	AmqpQueue      string `mapstructure:"AMQP_QUEUE"`
+	AmqpGroupQueue string `mapstructure:"AMQP_GROUP_QUEUE"`
+	AmqpExchange   string `mapstructure:"AMQP_EXCHANGE"`
+	AmqpRouting    string `mapstructure:"AMQP_ROUTING"`
 }
 
 // LoadConfig reads configuration from file or environment variables.

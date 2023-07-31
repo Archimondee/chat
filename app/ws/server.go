@@ -13,20 +13,22 @@ type Server struct {
 
 	rooms map[string]*Room
 
-	userRepository interfaces.UserRepository
-	users          []*string
-	roomRepository interfaces.RoomRepository
+	userRepository    interfaces.UserRepository
+	users             []*string
+	roomRepository    interfaces.RoomRepository
+	messageRepository interfaces.MessageRepository
 }
 
-func NewWebsocketServer(userRepository interfaces.UserRepository, roomRepository interfaces.RoomRepository) *Server {
+func NewWebsocketServer(userRepository interfaces.UserRepository, roomRepository interfaces.RoomRepository, messageRepository interfaces.MessageRepository) *Server {
 	s := &Server{
-		clients:        make(map[string]*Client),
-		register:       make(chan *Client),
-		unregister:     make(chan *Client),
-		broadcast:      make(chan []byte),
-		userRepository: userRepository,
-		rooms:          make(map[string]*Room),
-		roomRepository: roomRepository,
+		clients:           make(map[string]*Client),
+		register:          make(chan *Client),
+		unregister:        make(chan *Client),
+		broadcast:         make(chan []byte),
+		userRepository:    userRepository,
+		rooms:             make(map[string]*Room),
+		roomRepository:    roomRepository,
+		messageRepository: messageRepository,
 	}
 
 	return s
@@ -121,8 +123,9 @@ func (server *Server) RunRoomRepository(client *Client) {
 	}
 
 	for _, room := range rooms {
-		r := NewRoom(room.Uuid.String())
+		r := NewRoom(room.Uuid.String(), server.roomRepository, server.messageRepository)
 		go r.RunRoom()
+		//go r.consumeGroupMessage()
 		server.rooms[room.Uuid.String()] = r
 		server.rooms[room.Uuid.String()].register <- client
 

@@ -23,7 +23,7 @@ func main() {
 	}
 
 	utils.ConnectDatabase(loadedConfig.DBDriver, loadedConfig.DBSource, "")
-	utils.ConnectAmqp(loadedConfig.AmqpURL, loadedConfig.AmqpQueue, loadedConfig.AmqpRouting, loadedConfig.AmqpExchange)
+	utils.ConnectAmqp(loadedConfig.AmqpURL, loadedConfig.AmqpQueue, loadedConfig.AmqpRouting, loadedConfig.AmqpExchange, loadedConfig.AmqpGroupQueue)
 
 	ctx := context.TODO()
 	db := utils.DB
@@ -79,7 +79,7 @@ func main() {
 		}
 	}
 
-	server := ws.NewWebsocketServer(UserRepository, RoomRepository)
+	server := ws.NewWebsocketServer(UserRepository, RoomRepository, MessageRepository)
 	go server.Run()
 
 	r.GET("/message", func(c *gin.Context) {

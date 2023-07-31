@@ -23,13 +23,24 @@ func NewMessageController(ctx context.Context, messageRepository interfaces.Mess
 func (mc *MessageController) ReadMessage(ctx *gin.Context) {
 	sender := ctx.Query("sender")
 	recipient := ctx.Query("recipient")
+	roomId := ctx.Query("room_id")
 
-	data, err := mc.messageRepository.ReadMessage(sender, recipient)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ResponseData("error", err.Error(), nil))
+	if roomId != "" {
+		data, err := mc.messageRepository.ReadRoomMessage(roomId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, utils.ResponseData("error", err.Error(), nil))
+			return
+		}
+		ctx.JSON(http.StatusOK, utils.ResponseData("success", "success", data))
+		return
+	} else {
+		data, err := mc.messageRepository.ReadMessage(sender, recipient)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, utils.ResponseData("error", err.Error(), nil))
+			return
+		}
+		ctx.JSON(http.StatusOK, utils.ResponseData("success", "success", data))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.ResponseData("success", "success", data))
-	return
 }

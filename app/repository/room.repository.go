@@ -89,7 +89,7 @@ func (r RoomRepositoryImpl) JoinRoom(participant *request.ParticipantCreateReque
 
 func (r RoomRepositoryImpl) CheckParticipant(UserId string, RoomId string) (bool, error) {
 	var data *entity.Participant
-	result := r.DB.Table("participants").Find(&data, "user_id = ? & room_id = ?", UserId, RoomId)
+	result := r.DB.Table("participants").First(&data, "user_id = ? AND room_id = ?", UserId, RoomId)
 	if result.Error != nil {
 		return false, nil
 	}
@@ -98,4 +98,14 @@ func (r RoomRepositoryImpl) CheckParticipant(UserId string, RoomId string) (bool
 	}
 
 	return false, nil
+}
+
+func (r RoomRepositoryImpl) FindRoomById(RoomId string) (*entity.RoomUser, error) {
+	var room *entity.RoomUser
+	result := r.DB.Preload("Participants").Find(&room, "uuid = ? ", RoomId)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return room, nil
 }

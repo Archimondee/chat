@@ -242,13 +242,31 @@ func (client *Client) consumeMessage() {
 		false,                  // no-wait
 		nil,
 	)
-
 	if err != nil {
 		log.Fatal("Failed to register a consumer:", err)
+	}
+	msgGroup, err := utils.AmqpGroupChannel.Consume(
+		loadedConfig.AmqpGroupQueue, // queue
+		"",                          // consumer
+		false,                       // auto-ack
+		false,                       // exclusive
+		false,                       // no-local
+		false,                       // no-wait
+		nil,
+	)
+
+	if err != nil {
+		log.Fatal("Failed to register a consumer group:", err)
 	}
 	go func() {
 		for msg := range msgs {
 			BroadcastClient(msg, client)
+		}
+	}()
+
+	go func() {
+		for group := range msgGroup {
+			BroadcastClientGroup(group, client)
 		}
 	}()
 
@@ -259,6 +277,8 @@ func BroadcastClient(msg amqp.Delivery, client *Client) {
 	if err := json.Unmarshal(msg.Body, &body); err != nil {
 		log.Println(err)
 	}
+	//if body.RoomId == "00000000-0000-0000-0000-000000000000" {
+
 	recipientClient, ok := client.server.clients[body.Recipient]
 	if ok {
 		body.Status = "sent"
@@ -280,4 +300,31 @@ func BroadcastClient(msg amqp.Delivery, client *Client) {
 			log.Println(err)
 		}
 	}
+	//}
+}
+
+func BroadcastClientGroup(msg amqp.Delivery, client *Client) {
+	var body *interfaces.Message
+	if err := json.Unmarshal(msg.Body, &body); err != nil {
+		log.Println(err)
+	}
+
+	//if body.RoomId != "00000000-0000-0000-0000-000000000000" {
+	recipientClient, ok := client.server.clients[body.Recipient]
+
+	if ok {
+
+		client.server.clients[recipientClient.uuid].send <- Encode(body)
+		err := msg.Ack(false)
+		if err != nil {
+			log.Println(err)
+		}
+
+	} else {
+		err := msg.Nack(false, true)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 }

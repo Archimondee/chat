@@ -23,6 +23,7 @@ func NewMessageRepositoryImpl(ctx context.Context, db *gorm.DB) interfaces.Messa
 func (m MessageRepositoryImpl) CreateMessage(message interfaces.Message) error {
 	sender, _ := uuid.Parse(message.Sender)
 	recipient, _ := uuid.Parse(message.Recipient)
+	room, _ := uuid.Parse(message.RoomId)
 
 	data := &entity.Message{
 		Uuid:      message.Uuid,
@@ -30,6 +31,7 @@ func (m MessageRepositoryImpl) CreateMessage(message interfaces.Message) error {
 		Recipient: recipient,
 		Text:      message.Message,
 		Status:    message.Status,
+		RoomId:    room,
 	}
 	result := m.DB.Table("messages").Create(data)
 	if result.Error != nil {
@@ -42,6 +44,7 @@ func (m MessageRepositoryImpl) CreateMessage(message interfaces.Message) error {
 func (m MessageRepositoryImpl) UpdateMessage(message interfaces.Message) error {
 	sender, _ := uuid.Parse(message.Sender)
 	recipient, _ := uuid.Parse(message.Recipient)
+	room, _ := uuid.Parse(message.RoomId)
 
 	data := &entity.Message{
 		Uuid:      message.Uuid,
@@ -49,6 +52,7 @@ func (m MessageRepositoryImpl) UpdateMessage(message interfaces.Message) error {
 		Recipient: recipient,
 		Text:      message.Message,
 		Status:    message.Status,
+		RoomId:    room,
 	}
 	result := m.DB.Table("messages").Where("uuid = ?", data.Uuid).Updates(data)
 	if result.Error != nil {
@@ -62,6 +66,17 @@ func (m MessageRepositoryImpl) ReadMessage(sender string, recipient string) ([]*
 	var data []*entity.Message
 
 	result := m.DB.Table("messages").Find(&data, "sender = ? and recipient = ? or sender = ? and recipient = ?", sender, recipient, recipient, sender)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return data, nil
+}
+
+func (m MessageRepositoryImpl) ReadRoomMessage(roomId string) ([]*entity.Message, error) {
+	var data []*entity.Message
+
+	result := m.DB.Table("messages").Find(&data, "room_id = ? ", roomId)
 	if result.Error != nil {
 		return nil, result.Error
 	}
